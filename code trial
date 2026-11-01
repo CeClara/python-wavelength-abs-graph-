@@ -1,15 +1,16 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# Put this script in the same folder as your two data files.
+# seperator is the tab character ignore first 2 rows
+
 abs_data = pd.read_csv('absorption.txt', sep='\t', skiprows=2)
 em_data = pd.read_csv('fluorescence.txt', sep='\t', skiprows=2)
 
-# Remove the spaces before well names such as ' A04'.
+# Remove the spaces before well name e.g. ' A04'.
 abs_data['Well'] = abs_data['Well'].str.strip()
 em_data['Well'] = em_data['Well'].str.strip()
 
-# Make both wavelength columns have the same name.
+# letting wavelength and em mean the same thing
 em_data = em_data.rename(columns={'Em': 'Wavelength'})
 
 
