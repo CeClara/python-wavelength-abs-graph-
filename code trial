@@ -42,7 +42,7 @@ def plot_spectra(ax, well, title):
     abs_wavelength, abs_values = corrected_spectrum(abs_data, well, 'Abs')
     em_wavelength, em_values = corrected_spectrum(em_data, well, 'RFU')
 
-    ax.plot(abs_wavelength, abs_values, color='gray', label='Absorption', linewidth=1.8)
+    ax.plot(abs_wavelength, abs_values, color='gray',  linestyle='--' label='Absorption', linewidth=1.8)
     ax.plot(em_wavelength, em_values, color='royalblue', label='Fluorescence emission', linewidth=1.8)
     ax.set_title(title, loc='left', fontweight='bold')
     ax.set_ylabel('Normalised intensity')
