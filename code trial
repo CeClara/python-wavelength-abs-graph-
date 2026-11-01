@@ -1,0 +1,65 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Put this script in the same folder as your two data files.
+abs_data = pd.read_csv('absorption.txt', sep='\t', skiprows=2)
+em_data = pd.read_csv('fluorescence.txt', sep='\t', skiprows=2)
+
+# Remove the spaces before well names such as ' A04'.
+abs_data['Well'] = abs_data['Well'].str.strip()
+em_data['Well'] = em_data['Well'].str.strip()
+
+# Make both wavelength columns have the same name.
+em_data = em_data.rename(columns={'Em': 'Wavelength'})
+
+
+def normalise(values):
+    """Rescale values so their lowest point is 0 and highest point is 1."""
+    difference = values.max() - values.min()
+    if difference == 0:
+        raise ValueError('Cannot normalise a flat spectrum.')
+    return (values - values.min()) / difference
+
+
+def corrected_spectrum(data, well, measurement):
+    """Subtract the A01 blank at each wavelength, then normalise."""
+    sample = data[data['Well'] == well][['Wavelength', measurement]]
+    blank = data[data['Well'] == 'A01'][['Wavelength', measurement]]
+
+    # Join by wavelength, so readings are subtracted at the correct wavelengths.
+    paired = pd.merge(sample, blank, on='Wavelength', suffixes=('_sample', '_blank'))
+    if paired.empty:
+        raise ValueError(f'No matching wavelengths for well {well}.')
+
+    paired = paired.sort_values('Wavelength')
+    corrected = paired[f'{measurement}_sample'] - paired[f'{measurement}_blank']
+    return paired['Wavelength'], normalise(corrected)
+
+
+def plot_spectra(ax, well, title):
+    """Draw the corrected absorption and fluorescence lines for one well."""
+    abs_wavelength, abs_values = corrected_spectrum(abs_data, well, 'Abs')
+    em_wavelength, em_values = corrected_spectrum(em_data, well, 'RFU')
+
+    ax.plot(abs_wavelength, abs_values, color='gray', label='Absorption', linewidth=1.8)
+    ax.plot(em_wavelength, em_values, color='royalblue', label='Fluorescence emission', linewidth=1.8)
+    ax.set_title(title, loc='left', fontweight='bold')
+    ax.set_ylabel('Normalised intensity')
+    ax.set_xlim(350, 610)
+    ax.set_ylim(0, 1.05)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+
+# Make one figure containing the three samples.
+fig, axes = plt.subplots(3, 1, figsize=(7, 10), sharex=True)
+plot_spectra(axes[0], 'C02', 'A   eGFP control')
+plot_spectra(axes[1], 'C03', 'B   Y66W control')
+plot_spectra(axes[2], 'A04', 'C   Y66W mutant (A04)')
+
+axes[0].legend(frameon=False)
+axes[2].set_xlabel('Wavelength (nm)')
+plt.tight_layout()
+plt.savefig('Figure2_spectra.png', dpi=300, bbox_inches='tight')
+plt.savefig('Figure2_spectra.pdf', bbox_inches='tight')
+plt.show()
